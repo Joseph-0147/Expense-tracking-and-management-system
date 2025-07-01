@@ -8,6 +8,15 @@
     "lint": "vue-cli-service lint",
     "preview": "vite preview"
   },
+
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "vue-cli-service lint",
+  "preview": "vite preview",
+  "test": "echo \"No tests specified\" && exit 0"
+},
+  
   "dependencies": {
     "core-js": "^3.8.3",
     "jspdf": "^3.0.1",
