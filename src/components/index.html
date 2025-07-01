@@ -1,0 +1,9 @@
+<template>
+  <div>
+    <h2>Filter LearnVue Articles</h2>
+    <input v-model="query" type="text" placeholder="Filter Search" />
+    <br />
+    <button @click="reset">Reset</button>
+    <search-results />
+  </div>
+</template>
