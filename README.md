@@ -1,5 +1,3 @@
-# Expense-tracking-and-management-system 
-
 # Expense Tracking and Management System
 
 The **Expense Tracking and Management System** is a comprehensive web application designed to help individuals and organizations efficiently manage their finances. With intuitive dashboards and powerful analytics, users can track daily expenses, categorize transactions, set budgets, and monitor spending trends over time.
