@@ -1,56 +1,46 @@
 <template>
   <div class="budget-manager">
-    <div class="budget-header">
-      <h2>📊 Budget Tracker</h2>
-      <button @click="showBudgetModal = true" class="btn-primary">Add Budget</button>
-    </div>
+    <CardHeader
+      title="Budget Tracker"
+      icon="fas fa-chart-pie"
+      :show-add-button="true"
+      add-button-text="Add Budget"
+      @add="showBudgetModal = true"
+    />
 
     <!-- Budget Summary -->
     <div class="budget-summary">
-      <div class="summary-card">
-        <span class="summary-label">Total Budgeted</span>
-        <span class="summary-value">
-          Ksh{{ (financeStore.budgetSummary?.totalBudgeted || 0).toFixed(2) }}
-        </span>
-      </div>
-      <div class="summary-card">
-        <span class="summary-label">Total Spent</span>
-        <span class="summary-value spent">
-          Ksh{{ (financeStore.budgetSummary?.totalSpent || 0).toFixed(2) }}
-        </span>
-      </div>
-      <div
-        class="summary-card"
-        :class="{ negative: (financeStore.budgetSummary?.totalRemaining || 0) < 0 }"
-      >
-        <span class="summary-label">Remaining</span>
-        <span class="summary-value">
-          Ksh{{ (financeStore.budgetSummary?.totalRemaining || 0).toFixed(2) }}
-        </span>
-      </div>
+      <SummaryCard
+        label="Total Budgeted"
+        :value="financeStore.budgetSummary?.totalBudgeted || 0"
+        type="currency"
+      />
+      <SummaryCard
+        label="Total Spent"
+        :value="financeStore.budgetSummary?.totalSpent || 0"
+        type="currency"
+        status="warning"
+      />
+      <SummaryCard
+        label="Remaining"
+        :value="financeStore.budgetSummary?.totalRemaining || 0"
+        type="currency"
+        :status="(financeStore.budgetSummary?.totalRemaining || 0) < 0 ? 'negative' : 'positive'"
+      />
     </div>
 
     <!-- Alert Cards -->
-    <div
-      class="alert-section"
-      v-if="
-        (financeStore.budgetSummary?.overBudget || 0) > 0 ||
-        (financeStore.budgetSummary?.warningBudgets || 0) > 0
-      "
-    >
-      <div
-        v-if="(financeStore.budgetSummary?.overBudget || 0) > 0"
-        class="alert alert-danger"
-      >
-        ⚠️ {{ financeStore.budgetSummary.overBudget }} budget(s) exceeded this month
-      </div>
-      <div
-        v-if="(financeStore.budgetSummary?.warningBudgets || 0) > 0"
-        class="alert alert-warning"
-      >
-        🟡 {{ financeStore.budgetSummary.warningBudgets }} budget(s) at 80%+ spending
-      </div>
-    </div>
+    <Alert
+      v-if="(financeStore.budgetSummary?.overBudget || 0) > 0"
+      type="danger"
+      :message="`⚠️ ${financeStore.budgetSummary.overBudget} budget(s) exceeded this month`"
+    />
+    
+    <Alert
+      v-if="(financeStore.budgetSummary?.warningBudgets || 0) > 0"
+      type="warning"
+      :message="`🟡 ${financeStore.budgetSummary.warningBudgets} budget(s) at 80%+ spending`"
+    />
 
     <!-- Budget List -->
     <div class="budget-list" v-if="(financeStore.currentMonthBudgets || []).length > 0">
@@ -141,73 +131,70 @@
     </div>
 
     <!-- Add/Edit Budget Modal -->
-    <div
-      v-if="showBudgetModal || editingBudget"
-      class="modal-overlay"
-      @click="closeModal"
+    <Modal
+      :show="showBudgetModal || !!editingBudget"
+      :title="editingBudget ? 'Edit Budget' : 'Add New Budget'"
+      size="medium"
+      @close="closeModal"
     >
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editingBudget ? "Edit Budget" : "Add New Budget" }}</h3>
-          <button @click="closeModal" class="close-btn">&times;</button>
+      <form @submit.prevent="saveBudget">
+        <div class="form-group">
+          <label>Category</label>
+          <select v-model="budgetForm.category" required>
+            <option value="">Select category</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Housing">Housing</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Education">Education</option>
+            <option value="Personal Care">Personal Care</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
 
-        <div class="modal-body">
-          <form @submit.prevent="saveBudget">
-            <div class="form-group">
-              <label>Category</label>
-              <select v-model="budgetForm.category" required>
-                <option value="">Select category</option>
-                <option value="Food & Dining">Food & Dining</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Shopping">Shopping</option>
-                <option value="Utilities">Utilities</option>
-                <option value="Housing">Housing</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Education">Education</option>
-                <option value="Personal Care">Personal Care</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Monthly Budget Amount</label>
-              <input
-                v-model.number="budgetForm.amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Description (Optional)</label>
-              <textarea
-                v-model="budgetForm.description"
-                placeholder="Budget notes or goals"
-                rows="3"
-              ></textarea>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
-              <button type="submit" class="btn-save">
-                {{ editingBudget ? "Update Budget" : "Add Budget" }}
-              </button>
-            </div>
-          </form>
+        <div class="form-group">
+          <label>Monthly Budget Amount</label>
+          <input
+            v-model.number="budgetForm.amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="0.00"
+            required
+          />
         </div>
-      </div>
-    </div>
+
+        <div class="form-group">
+          <label>Description (Optional)</label>
+          <textarea
+            v-model="budgetForm.description"
+            placeholder="Budget notes or goals"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
+          <button type="submit" class="btn-save">
+            {{ editingBudget ? "Update Budget" : "Add Budget" }}
+          </button>
+        </div>
+      </form>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useFinanceStore } from "@/stores/finance";
+import { getCurrentMonth } from "@/utils/dateUtils";
+import SummaryCard from "@/components/shared/SummaryCard.vue";
+import Alert from "@/components/shared/Alert.vue";
+import Modal from "@/components/shared/Modal.vue";
+import CardHeader from "@/components/shared/CardHeader.vue";
 
 const financeStore = useFinanceStore();
 
@@ -320,10 +307,6 @@ const deleteBudget = (budgetId) => {
       alert("Error deleting budget. Please try again.");
     }
   }
-};
-
-const getCurrentMonth = () => {
-  return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
 };
 
 // Expose createTestData for debugging (you can remove this in production)
