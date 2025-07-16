@@ -1,30 +1,32 @@
 <template>
   <div class="tuition-manager">
-    <div class="tuition-header">
-      <h2>🎓 Tuition & Fees</h2>
-      <button @click="showTuitionModal = true" class="btn-primary">Add Fee</button>
-    </div>
+    <CardHeader
+      title="Tuition & Fees"
+      icon="fas fa-graduation-cap"
+      :show-add-button="true"
+      add-button-text="Add Fee"
+      @add="showTuitionModal = true"
+    />
 
     <!-- Tuition Summary -->
     <div class="tuition-summary">
-      <div class="summary-card total">
-        <span class="summary-label">Total Fees</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.tuitionSummary?.totalFees?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
-      <div class="summary-card paid">
-        <span class="summary-label">Paid</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.tuitionSummary?.totalPaid?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
-      <div class="summary-card remaining">
-        <span class="summary-label">Balance</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.tuitionSummary?.totalRemaining?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
+      <SummaryCard
+        label="Total Fees"
+        :value="financeStore.tuitionSummary?.totalFees || 0"
+        type="currency"
+      />
+      <SummaryCard
+        label="Paid"
+        :value="financeStore.tuitionSummary?.totalPaid || 0"
+        type="currency"
+        status="positive"
+      />
+      <SummaryCard
+        label="Balance"
+        :value="financeStore.tuitionSummary?.totalRemaining || 0"
+        type="currency"
+        :status="(financeStore.tuitionSummary?.totalRemaining || 0) > 0 ? 'warning' : 'positive'"
+      />
     </div>
 
     <!-- No Fees State -->
@@ -71,81 +73,80 @@
     </div>
 
     <!-- Add/Edit Fee Modal -->
-    <div v-if="showTuitionModal || editingFee" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ editingFee ? "Edit Fee" : "Add New Fee" }}</h3>
-          <button @click="closeModal" class="close-btn">&times;</button>
+    <Modal
+      :show="showTuitionModal || !!editingFee"
+      :title="editingFee ? 'Edit Fee' : 'Add New Fee'"
+      size="medium"
+      @close="closeModal"
+    >
+      <form @submit.prevent="saveFee">
+        <div class="form-group">
+          <label>Fee Name</label>
+          <input
+            v-model="feeForm.name"
+            type="text"
+            placeholder="e.g., Tuition Fee, Lab Fee"
+            required
+          />
         </div>
 
-        <div class="modal-body">
-          <form @submit.prevent="saveFee">
-            <div class="form-group">
-              <label>Fee Name</label>
-              <input
-                v-model="feeForm.name"
-                type="text"
-                placeholder="e.g., Tuition Fee, Lab Fee"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Fee Type</label>
-              <select v-model="feeForm.type" required>
-                <option value="">Select type</option>
-                <option value="Tuition">Tuition</option>
-                <option value="Lab Fee">Lab Fee</option>
-                <option value="Exam Fee">Exam Fee</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Amount (Ksh)</label>
-                <input
-                  v-model.number="feeForm.amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label>Due Date</label>
-                <input v-model="feeForm.dueDate" type="date" required />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Semester/Year</label>
-              <input
-                v-model="feeForm.semester"
-                type="text"
-                placeholder="e.g., Fall 2024"
-                required
-              />
-            </div>
-
-            <div class="form-actions">
-              <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
-              <button type="submit" class="btn-save">
-                {{ editingFee ? "Update Fee" : "Add Fee" }}
-              </button>
-            </div>
-          </form>
+        <div class="form-group">
+          <label>Fee Type</label>
+          <select v-model="feeForm.type" required>
+            <option value="">Select type</option>
+            <option value="Tuition">Tuition</option>
+            <option value="Lab Fee">Lab Fee</option>
+            <option value="Exam Fee">Exam Fee</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
-      </div>
-    </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (Ksh)</label>
+            <input
+              v-model.number="feeForm.amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Due Date</label>
+            <input v-model="feeForm.dueDate" type="date" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Semester/Year</label>
+          <input
+            v-model="feeForm.semester"
+            type="text"
+            placeholder="e.g., Fall 2024"
+            required
+          />
+        </div>
+
+        <div class="form-actions">
+          <button type="button" @click="closeModal" class="btn-cancel">Cancel</button>
+          <button type="submit" class="btn-save">
+            {{ editingFee ? "Update Fee" : "Add Fee" }}
+          </button>
+        </div>
+      </form>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from "vue";
 import { useFinanceStore } from "@/stores/finance";
+import SummaryCard from "@/components/shared/SummaryCard.vue";
+import Modal from "@/components/shared/Modal.vue";
+import CardHeader from "@/components/shared/CardHeader.vue";
 
 const financeStore = useFinanceStore();
 

@@ -1,36 +1,47 @@
 <template>
   <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">💳 Bill Management</h2>
-      <button @click="showAddBillModal = true" class="btn btn-primary">Add Bill</button>
-    </div>
+    <CardHeader
+      title="Bill Management"
+      icon="fas fa-credit-card"
+      :show-add-button="true"
+      add-button-text="Add Bill"
+      @add="showAddBillModal = true"
+    />
 
     <!-- Bill Summary -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div class="summary-card">
-        <span class="summary-label">Monthly Bills</span>
-        <span class="summary-value"
-          >Ksh{{ financeStore.totalMonthlyBills?.toFixed(2) || "0.00" }}</span
-        >
-      </div>
-      <div class="summary-card" style="border-left-color: var(--warning-500)">
-        <span class="summary-label">Upcoming</span>
-        <span class="summary-value">{{ financeStore.upcomingBills?.length || 0 }}</span>
-      </div>
-      <div class="summary-card" style="border-left-color: var(--danger-500)">
-        <span class="summary-label">Overdue</span>
-        <span class="summary-value">{{ financeStore.overdueBills?.length || 0 }}</span>
-      </div>
+      <SummaryCard
+        label="Monthly Bills"
+        :value="financeStore.totalMonthlyBills || 0"
+        type="currency"
+      />
+      <SummaryCard
+        label="Upcoming"
+        :value="financeStore.upcomingBills?.length || 0"
+        type="count"
+        border-color="var(--warning-500)"
+      />
+      <SummaryCard
+        label="Overdue"
+        :value="financeStore.overdueBills?.length || 0"
+        type="count"
+        border-color="var(--danger-500)"
+        status="danger"
+      />
     </div>
 
     <!-- Alerts -->
-    <div v-if="financeStore.upcomingBills?.length > 0" class="alert alert-warning">
-      ⏰ {{ financeStore.upcomingBills.length }} bill(s) due in the next 7 days
-    </div>
+    <Alert
+      v-if="financeStore.upcomingBills?.length > 0"
+      type="warning"
+      :message="`⏰ ${financeStore.upcomingBills.length} bill(s) due in the next 7 days`"
+    />
 
-    <div v-if="financeStore.overdueBills?.length > 0" class="alert alert-danger">
-      🚨 {{ financeStore.overdueBills.length }} overdue bill(s) need immediate attention
-    </div>
+    <Alert
+      v-if="financeStore.overdueBills?.length > 0"
+      type="danger"
+      :message="`🚨 ${financeStore.overdueBills.length} overdue bill(s) need immediate attention`"
+    />
 
     <!-- Upcoming Bills Section -->
     <div v-if="financeStore.upcomingBills?.length > 0" class="mb-8">
@@ -156,108 +167,107 @@
     </div>
 
     <!-- Add/Edit Bill Modal -->
-    <div v-if="showAddBillModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ editingBill ? "Edit Bill" : "Add New Bill" }}</h3>
-          <button @click="closeModal" class="modal-close">
-            <i class="fas fa-times"></i>
+    <Modal
+      :show="showAddBillModal"
+      :title="editingBill ? 'Edit Bill' : 'Add New Bill'"
+      size="medium"
+      @close="closeModal"
+    >
+      <form @submit.prevent="saveBill" class="space-y-4">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Bill Name</label>
+            <input
+              v-model="billForm.name"
+              type="text"
+              class="form-input"
+              placeholder="e.g., Electricity Bill"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Amount (Ksh)</label>
+            <input
+              v-model="billForm.amount"
+              type="number"
+              step="0.01"
+              class="form-input"
+              placeholder="0.00"
+              min="0"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select v-model="billForm.category" class="form-select" required>
+              <option value="">Select category</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Rent">Rent</option>
+              <option value="Internet">Internet</option>
+              <option value="Phone">Phone</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Subscription">Subscription</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Frequency</label>
+            <select v-model="billForm.frequency" class="form-select" required>
+              <option value="">Select frequency</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Yearly">Yearly</option>
+              <option value="Weekly">Weekly</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Next Due Date</label>
+          <input
+            v-model="billForm.nextDueDate"
+            type="date"
+            class="form-input"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <textarea
+            v-model="billForm.notes"
+            class="form-textarea"
+            rows="3"
+            placeholder="Additional notes about this bill"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" @click="closeModal" class="btn btn-ghost flex-1">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary flex-1">
+            {{ editingBill ? "Update Bill" : "Add Bill" }}
           </button>
         </div>
-
-        <div class="modal-body">
-          <form @submit.prevent="saveBill" class="space-y-4">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Bill Name</label>
-                <input
-                  v-model="billForm.name"
-                  type="text"
-                  class="form-input"
-                  placeholder="e.g., Electricity Bill"
-                  required
-                />
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Amount (Ksh)</label>
-                <input
-                  v-model="billForm.amount"
-                  type="number"
-                  step="0.01"
-                  class="form-input"
-                  placeholder="0.00"
-                  min="0"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Category</label>
-                <select v-model="billForm.category" class="form-select" required>
-                  <option value="">Select category</option>
-                  <option value="Utilities">Utilities</option>
-                  <option value="Rent">Rent</option>
-                  <option value="Internet">Internet</option>
-                  <option value="Phone">Phone</option>
-                  <option value="Insurance">Insurance</option>
-                  <option value="Subscription">Subscription</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Frequency</label>
-                <select v-model="billForm.frequency" class="form-select" required>
-                  <option value="">Select frequency</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Quarterly">Quarterly</option>
-                  <option value="Yearly">Yearly</option>
-                  <option value="Weekly">Weekly</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Next Due Date</label>
-              <input
-                v-model="billForm.nextDueDate"
-                type="date"
-                class="form-input"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Notes (Optional)</label>
-              <textarea
-                v-model="billForm.notes"
-                class="form-textarea"
-                rows="3"
-                placeholder="Additional notes about this bill"
-              ></textarea>
-            </div>
-
-            <div class="flex gap-3 pt-4">
-              <button type="button" @click="closeModal" class="btn btn-ghost flex-1">
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary flex-1">
-                {{ editingBill ? "Update Bill" : "Add Bill" }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from "vue";
 import { useFinanceStore } from "@/stores/finance";
+import { formatDate } from "@/utils/dateUtils";
+import SummaryCard from "@/components/shared/SummaryCard.vue";
+import Alert from "@/components/shared/Alert.vue";
+import Modal from "@/components/shared/Modal.vue";
+import CardHeader from "@/components/shared/CardHeader.vue";
 
 const financeStore = useFinanceStore();
 
@@ -326,15 +336,6 @@ const deleteBill = (billId) => {
     financeStore.deleteBill(billId);
   }
 };
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
 </script>
 
 <style scoped>
@@ -345,35 +346,6 @@ const formatDate = (dateString) => {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.card-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.btn-primary {
-  background: #4a8fff;
-  color: white;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s ease;
-}
-
-.btn-primary:hover {
-  background: #3b7ce6;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -381,58 +353,8 @@ const formatDate = (dateString) => {
   margin-bottom: 2rem;
 }
 
-.summary-card {
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  text-align: center;
-  border-left: 4px solid #4a8fff;
-}
-
-.summary-card.overdue {
-  border-left-color: #dc2626;
-  background: #fef2f2;
-}
-
-.summary-card.upcoming {
-  border-left-color: #f59e0b;
-  background: #fffbeb;
-}
-
-.summary-label {
-  display: block;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-}
-
-.summary-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
 .mb-6 {
   margin-bottom: 1.5rem;
-}
-
-.alert {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.alert-warning {
-  background: #fffbeb;
-  color: #856404;
-  border-color: #ffeeba;
-}
-
-.alert-danger {
-  background: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
 }
 
 .upcoming-bills,
@@ -538,54 +460,6 @@ const formatDate = (dateString) => {
   font-size: 0.875rem;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.modal-body {
-  padding: 2rem;
-}
-
 .form-row {
   display: flex;
   flex-wrap: wrap;
@@ -647,6 +521,21 @@ const formatDate = (dateString) => {
 
 .btn-ghost:hover {
   background: #f3f4f6;
+}
+
+.btn-primary {
+  background: #4a8fff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #3b7ce6;
 }
 
 .btn-secondary {
