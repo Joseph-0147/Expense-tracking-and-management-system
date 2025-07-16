@@ -6,16 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "vue-cli-service lint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "echo \"No tests specified\" && exit 0"
   },
-
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "lint": "vue-cli-service lint",
-  "preview": "vite preview",
-  "test": "echo \"No tests specified\" && exit 0"
-},
   
   "dependencies": {
     "core-js": "^3.8.3",
