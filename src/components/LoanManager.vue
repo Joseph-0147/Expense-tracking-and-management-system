@@ -1,36 +1,41 @@
 <template>
   <div class="loan-manager card">
-    <div class="card-header">
-      <h2 class="card-title">💰 Student Loans</h2>
-      <button @click="showLoanModal = true" class="btn btn-primary">Add Loan</button>
-    </div>
+    <CardHeader
+      title="Student Loans"
+      icon="fas fa-money-bill-wave"
+      :show-add-button="true"
+      add-button-text="Add Loan"
+      @add="showLoanModal = true"
+    />
 
     <!-- Loan Summary -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-      <div class="summary-card">
-        <span class="summary-label">Total Borrowed</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.loanSummary?.totalBorrowed?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
-      <div class="summary-card" style="border-left-color: var(--danger-500)">
-        <span class="summary-label">Outstanding</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.loanSummary?.totalOutstanding?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
-      <div class="summary-card" style="border-left-color: var(--secondary-500)">
-        <span class="summary-label">Paid</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.loanSummary?.totalPaid?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
-      <div class="summary-card" style="border-left-color: var(--warning-500)">
-        <span class="summary-label">Total Interest</span>
-        <span class="summary-value">
-          Ksh{{ financeStore.loanSummary?.totalInterest?.toFixed(2) || "0.00" }}
-        </span>
-      </div>
+      <SummaryCard
+        label="Total Borrowed"
+        :value="financeStore.loanSummary?.totalBorrowed || 0"
+        type="currency"
+      />
+      <SummaryCard
+        label="Outstanding"
+        :value="financeStore.loanSummary?.totalOutstanding || 0"
+        type="currency"
+        border-color="var(--danger-500)"
+        status="danger"
+      />
+      <SummaryCard
+        label="Paid"
+        :value="financeStore.loanSummary?.totalPaid || 0"
+        type="currency"
+        border-color="var(--secondary-500)"
+        status="positive"
+      />
+      <SummaryCard
+        label="Total Interest"
+        :value="financeStore.loanSummary?.totalInterest || 0"
+        type="currency"
+        border-color="var(--warning-500)"
+        status="warning"
+      />
     </div>
 
     <!-- Payment Progress -->
@@ -66,13 +71,17 @@
     </div>
 
     <!-- Alerts -->
-    <div v-if="financeStore.upcomingLoanPayments?.length > 0" class="alert alert-warning">
-      ⏰ {{ financeStore.upcomingLoanPayments.length }} loan payment(s) due soon
-    </div>
+    <Alert
+      v-if="financeStore.upcomingLoanPayments?.length > 0"
+      type="warning"
+      :message="`⏰ ${financeStore.upcomingLoanPayments.length} loan payment(s) due soon`"
+    />
 
-    <div v-if="financeStore.overdueLoanPayments?.length > 0" class="alert alert-danger">
-      🚨 {{ financeStore.overdueLoanPayments.length }} loan payment(s) overdue
-    </div>
+    <Alert
+      v-if="financeStore.overdueLoanPayments?.length > 0"
+      type="danger"
+      :message="`🚨 ${financeStore.overdueLoanPayments.length} loan payment(s) overdue`"
+    />
 
     <!-- Filter Tabs -->
     <div class="filter-tabs">
@@ -497,6 +506,10 @@
 <script setup>
 import { ref, reactive, computed } from "vue";
 import { useFinanceStore } from "@/stores/finance";
+import { formatDate, isOverdue } from "@/utils/dateUtils";
+import SummaryCard from "@/components/shared/SummaryCard.vue";
+import Alert from "@/components/shared/Alert.vue";
+import CardHeader from "@/components/shared/CardHeader.vue";
 
 const financeStore = useFinanceStore();
 
@@ -643,18 +656,7 @@ const viewPaymentSchedule = (loan) => {
   showScheduleModal.value = true;
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
 
-const isOverdue = (date) => {
-  return new Date(date) < new Date();
-};
 
 const isUpcoming = (date) => {
   const today = new Date();
